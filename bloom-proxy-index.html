@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bloom — Investor AI Analyst</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:       #080d08;
+    --panel:    #0c120c;
+    --border:   #1a2e1a;
+    --border2:  #243824;
+    --green:    #4ecb71;
+    --green2:   #a8e063;
+    --green3:   #2a5c2a;
+    --text:     #c8ddb8;
+    --muted:    #5a7a5a;
+    --muted2:   #3a5a3a;
+    --red:      #e05555;
+    --yellow:   #d4c063;
+    --accent:   #c8f080;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ─── NOISE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.6;
+  }
+
+  /* ─── TOPBAR ─── */
+  #topbar {
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,13,8,0.95);
+    backdrop-filter: blur(12px);
+    flex-shrink: 0;
+    gap: 20px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-mark {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green2) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    box-shadow: 0 0 20px rgba(78,203,113,0.35);
+  }
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.03em;
+  }
+  .logo-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-top: 1px;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    margin-left: 20px;
+  }
+  .nav-tab {
+    padding: 6px 14px;
+    border-radius: 5px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    color: var(--muted);
+    border: 1px solid transparent;
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active {
+    color: var(--green);
+    background: rgba(78,203,113,0.07);
+    border-color: var(--border2);
+  }
+
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .status-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(78,203,113,0.08);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--green);
+    letter-spacing: 0.12em;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .api-key-area {
+    display: flex; align-items: center; gap: 6px;
+  }
+  #apiKeyInput {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    width: 200px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #apiKeyInput:focus { border-color: var(--green3); }
+  #apiKeyInput::placeholder { color: var(--muted); }
+
+  .save-btn {
+    background: var(--green3);
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    padding: 5px 10px;
+    color: var(--green);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .save-btn:hover { background: rgba(78,203,113,0.2); }
+
+  /* ─── MAIN LAYOUT ─── */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ─── SIDEBAR ─── */
+  #sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 14px 16px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .watch-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 16px;
+    border-bottom: 1px solid rgba(26,46,26,0.5);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .watch-item:hover { background: rgba(78,203,113,0.04); }
+  .watch-ticker { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; color: var(--text); }
+  .watch-name { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .watch-price { text-align: right; }
+  .watch-val { font-family: 'DM Mono', monospace; font-size: 12px; }
+  .watch-chg { font-family: 'DM Mono', monospace; font-size: 10px; }
+  .up { color: var(--green); }
+  .dn { color: var(--red); }
+
+  .quick-btn {
+    margin: 8px 12px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    width: calc(100% - 24px);
+    letter-spacing: 0.04em;
+  }
+  .quick-btn:hover {
+    border-color: var(--green3);
+    color: var(--text);
+    background: rgba(78,203,113,0.04);
+  }
+
+  /* ─── CENTER CHAT ─── */
+  #chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+
+  #chat-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .chat-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    color: var(--accent);
+  }
+  .chat-subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    margin-top: 2px;
+  }
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 4px 10px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: all 0.15s;
+  }
+  .clear-btn:hover { color: var(--text); border-color: var(--border2); }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .msg-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: fadeUp 0.25s ease;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  .msg-wrap.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .avatar.bloom {
+    background: linear-gradient(135deg, var(--green), var(--green2));
+    box-shadow: 0 0 12px rgba(78,203,113,0.3);
+  }
+  .avatar.user { background: var(--green3); color: var(--green); font-family: 'DM Mono', monospace; font-weight: 500; }
+
+  .bubble {
+    max-width: 75%;
+    padding: 11px 15px;
+    border-radius: 4px;
+    line-height: 1.7;
+    font-size: 13px;
+  }
+  .bubble.bloom {
+    background: rgba(12,18,12,0.8);
+    border: 1px solid var(--border2);
+    border-radius: 2px 10px 10px 10px;
+  }
+  .bubble.user {
+    background: rgba(42,92,42,0.25);
+    border: 1px solid var(--green3);
+    border-radius: 10px 2px 10px 10px;
+    color: var(--text);
+  }
+  .bubble strong { color: var(--accent); font-weight: 600; }
+  .bubble em { color: var(--yellow); font-style: normal; }
+  .bubble .section-head {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--green);
+    margin: 10px 0 4px;
+  }
+
+  /* typing dots */
+  .typing-dots {
+    display: flex; gap: 4px; align-items: center; padding: 4px 0;
+  }
+  .typing-dots span {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: dot 1.2s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+  /* welcome */
+  #welcome {
+    text-align: center;
+    padding: 50px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .welcome-icon { font-size: 40px; margin-bottom: 6px; }
+  .welcome-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    color: var(--accent);
+    font-weight: 900;
+  }
+  .welcome-sub { color: var(--muted); font-size: 12px; max-width: 380px; line-height: 1.8; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; margin-top: 14px; }
+  .chip {
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 7px 13px;
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+    text-align: left;
+    letter-spacing: 0.03em;
+  }
+  .chip:hover { border-color: var(--green); color: var(--accent); background: rgba(78,203,113,0.05); }
+
+  /* input bar */
+  #input-bar {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    background: rgba(8,13,8,0.9);
+  }
+  .input-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 8px 8px 14px;
+    transition: border-color 0.15s;
+  }
+  .input-wrap:focus-within { border-color: var(--green3); }
+  #msgInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    resize: none;
+    line-height: 1.6;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  #msgInput::placeholder { color: var(--muted); }
+  #sendBtn {
+    width: 34px; height: 34px;
+    border-radius: 6px;
+    border: none;
+    background: linear-gradient(135deg, var(--green), var(--green2));
+    color: #0a0e0a;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    font-weight: 700;
+  }
+  #sendBtn:disabled { background: var(--green3); color: var(--muted); cursor: default; }
+  #sendBtn:not(:disabled):hover { box-shadow: 0 0 14px rgba(78,203,113,0.4); transform: scale(1.05); }
+  .input-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted2);
+    text-align: center;
+    margin-top: 7px;
+    letter-spacing: 0.07em;
+  }
+
+  /* ─── RIGHT PANEL ─── */
+  #right-panel {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background: var(--panel);
+  }
+
+  .rp-section {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+  .rp-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* market summary cards */
+  .mkt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .mkt-card {
+    background: rgba(8,13,8,0.6);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 10px;
+  }
+  .mkt-name { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.1em; }
+  .mkt-val { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); margin-top: 3px; font-weight: 500; }
+  .mkt-chg { font-family: 'DM Mono', monospace; font-size: 10px; margin-top: 2px; }
+
+  /* sparkline-like mini bar */
+  .mini-bar {
+    height: 3px;
+    border-radius: 2px;
+    margin-top: 6px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .mini-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+
+  /* fear greed */
+  .fg-meter {
+    position: relative;
+    height: 6px;
+    background: linear-gradient(90deg, var(--red) 0%, var(--yellow) 50%, var(--green) 100%);
+    border-radius: 3px;
+    margin: 8px 0;
+  }
+  .fg-needle {
+    position: absolute;
+    top: -4px;
+    width: 4px; height: 14px;
+    background: white;
+    border-radius: 2px;
+    transform: translateX(-50%);
+    box-shadow: 0 0 6px rgba(255,255,255,0.6);
+    transition: left 1s ease;
+  }
+  .fg-labels { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); }
+
+  /* sectors */
+  .sector-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(26,46,26,0.4);
+  }
+  .sector-name { font-size: 11px; color: var(--text); }
+  .sector-bar-wrap { width: 70px; height: 4px; background: var(--border); border-radius: 2px; position: relative; overflow: hidden; }
+  .sector-bar { height: 100%; border-radius: 2px; }
+  .sector-pct { font-family: 'DM Mono', monospace; font-size: 10px; width: 44px; text-align: right; }
+
+  /* history */
+  .hist-item {
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(26,46,26,0.4);
+    cursor: pointer;
+    transition: color 0.12s;
+  }
+  .hist-item:hover .hist-q { color: var(--accent); }
+  .hist-q { font-size: 11px; color: var(--text); line-height: 1.4; }
+  .hist-time { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+  /* error banner */
+  .error-banner {
+    background: rgba(224,85,85,0.1);
+    border: 1px solid rgba(224,85,85,0.3);
+    border-radius: 5px;
+    padding: 8px 12px;
+    color: var(--red);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    margin: 0 16px 12px;
+  }
+
+  /* scrollbars */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* tab panels */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+  /* research tab */
+  #research-panel {
+    flex: 1; overflow-y: auto; padding: 24px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .research-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+  }
+  .research-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .research-card p { color: var(--muted); font-size: 12px; line-height: 1.8; }
+  .research-prompt {
+    width: 100%; padding: 12px;
+    background: rgba(8,13,8,0.6);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    margin-top: 10px;
+  }
+  .research-prompt:focus { border-color: var(--green3); }
+  .run-btn {
+    margin-top: 10px;
+    padding: 9px 20px;
+    background: linear-gradient(135deg, var(--green), var(--green2));
+    border: none; border-radius: 6px;
+    color: #0a0e0a;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+  }
+  .run-btn:hover { box-shadow: 0 0 16px rgba(78,203,113,0.35); }
+  .run-btn:disabled { opacity: 0.5; cursor: default; }
+  #researchOutput {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px;
+    font-size: 13px; line-height: 1.8; color: var(--text);
+    min-height: 100px; white-space: pre-wrap;
+  }
+  #researchOutput strong { color: var(--accent); }
+
+  /* portfolio tab */
+  #portfolio-panel {
+    flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;
+  }
+  .port-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  }
+  .port-total { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--accent); }
+  .port-chg { font-family: 'DM Mono', monospace; font-size: 13px; }
+  .port-table { width: 100%; border-collapse: collapse; }
+  .port-table th {
+    font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.12em;
+    color: var(--muted); text-align: left; padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .port-table td {
+    padding: 10px 8px; border-bottom: 1px solid rgba(26,46,26,0.4);
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text);
+  }
+  .port-table tr:hover td { background: rgba(78,203,113,0.03); }
+  .alloc-bar { width: 60px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .alloc-fill { height: 100%; background: var(--green); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-mark">🌱</div>
+    <div>
+      <div class="logo-text">Bloom</div>
+      <div class="logo-sub">INVESTOR AI ANALYST</div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('chat')">ANALYST</button>
+    <button class="nav-tab" onclick="switchTab('research')">RESEARCH</button>
+    <button class="nav-tab" onclick="switchTab('portfolio')">PORTFOLIO</button>
+  </div>
+
+  <div class="topbar-right">
+    <div class="api-key-area" style="display:none">
+      <input id="apiKeyInput" type="password" placeholder="sk-ant-... (paste API key)" />
+      <button class="save-btn" onclick="saveKey()">SAVE</button>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      BLOOM ACTIVE
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-section">WATCHLIST</div>
+    <div id="watchlist"></div>
+
+    <div class="sidebar-section" style="margin-top:8px">QUICK ANALYSIS</div>
+    <button class="quick-btn" onclick="quickAsk('Give me a bull/bear case for the S&P 500 right now.')">📊 S&P 500 Bull/Bear</button>
+    <button class="quick-btn" onclick="quickAsk('What are the top 3 macro risks facing markets this quarter?')">🌐 Macro Risks</button>
+    <button class="quick-btn" onclick="quickAsk('Which sectors are showing the strongest momentum right now and why?')">🔥 Hot Sectors</button>
+    <button class="quick-btn" onclick="quickAsk('Explain the current yield curve and what it signals for equities.')">📈 Yield Curve</button>
+    <button class="quick-btn" onclick="quickAsk('What does a typical DCF model look like? Walk me through it step by step.')">🧮 DCF Walkthrough</button>
+    <button class="quick-btn" onclick="quickAsk('What are the best risk management strategies for a concentrated equity portfolio?')">🛡️ Risk Management</button>
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- CENTER PANELS -->
+  <div id="chat-area" class="tab-panel active" id="chat-panel-wrap">
+    <div id="chat-header">
+      <div>
+        <div class="chat-title">AI Analyst Chat</div>
+        <div class="chat-subtitle">POWERED BY CLAUDE · REAL-TIME MARKET INTELLIGENCE</div>
+      </div>
+      <button class="clear-btn" onclick="clearChat()">CLEAR CHAT</button>
+    </div>
+
+    <div id="messages">
+      <div id="welcome">
+        <div class="welcome-icon">📈</div>
+        <div class="welcome-title">Good morning, Investor.</div>
+        <div class="welcome-sub">Ask me anything — earnings analysis, sector rotation, valuation models, macro outlook, or portfolio strategy.</div>
+        <div class="chips">
+          <button class="chip" onclick="quickAsk('Analyze NVIDIA\'s AI competitive moat and valuation.')">NVDA moat analysis</button>
+          <button class="chip" onclick="quickAsk('What happens to equities when the Fed cuts rates?')">Fed cuts → equities?</button>
+          <button class="chip" onclick="quickAsk('Compare growth vs value investing in the current environment.')">Growth vs Value now</button>
+          <button class="chip" onclick="quickAsk('Walk me through how to read an earnings report.')">Reading earnings</button>
+          <button class="chip" onclick="quickAsk('What is the VIX and how should investors interpret it?')">VIX explained</button>
+          <button class="chip" onclick="quickAsk('Best ETFs for international diversification right now?')">International ETFs</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="errorBanner" class="error-banner" style="display:none"></div>
+
+    <div id="input-bar">
+      <div class="input-wrap">
+        <textarea id="msgInput" rows="1" placeholder="Ask about stocks, macro, valuations, sectors…"></textarea>
+        <button id="sendBtn" onclick="sendMessage()" disabled>↑</button>
+      </div>
+      <div class="input-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE · NOT FINANCIAL ADVICE</div>
+    </div>
+  </div>
+
+  <!-- RESEARCH PANEL -->
+  <div id="research-panel-wrap" class="tab-panel">
+    <div id="research-panel">
+      <div class="research-card">
+        <h3>Deep Dive Research</h3>
+        <p>Enter a company, sector, or topic for an in-depth investment research report.</p>
+        <textarea class="research-prompt" id="researchPrompt" placeholder="e.g. Write a full investment research note on Apple Inc. (AAPL) covering business model, competitive position, valuation, and key risks."></textarea>
+        <button class="run-btn" id="runResearch" onclick="runResearch()">RUN ANALYSIS →</button>
+      </div>
+      <div class="research-card" id="researchResultCard" style="display:none">
+        <h3>Research Output</h3>
+        <div id="researchOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PORTFOLIO PANEL -->
+  <div id="portfolio-panel-wrap" class="tab-panel">
+    <div id="portfolio-panel">
+      <div class="research-card">
+        <h3>Portfolio Analyzer</h3>
+        <p>Paste your holdings below (e.g. "AAPL 40%, MSFT 20%, GOOGL 15%, BND 25%") and Bloom will analyze your allocation, concentration risk, and suggest improvements.</p>
+        <textarea class="research-prompt" id="portfolioInput" placeholder="e.g. AAPL 30%, NVDA 20%, MSFT 15%, AMZN 15%, BND 20%"></textarea>
+        <button class="run-btn" id="runPortfolio" onclick="runPortfolioAnalysis()">ANALYZE PORTFOLIO →</button>
+      </div>
+
+      <div class="research-card" id="portfolioResultCard" style="display:none">
+        <h3>Portfolio Analysis</h3>
+        <div id="portfolioOutput"></div>
+      </div>
+
+      <!-- Sample portfolio table -->
+      <div class="research-card">
+        <h3 style="margin-bottom:14px">Sample Model Portfolio</h3>
+        <table class="port-table">
+          <thead>
+            <tr>
+              <th>TICKER</th><th>NAME</th><th>ALLOC</th><th>BAR</th><th>TYPE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>AAPL</td><td>Apple Inc.</td><td class="up">25%</td><td><div class="alloc-bar"><div class="alloc-fill" style="width:25%"></div></div></td><td>Large Cap</td></tr>
+            <tr><td>MSFT</td><td>Microsoft</td><td class="up">20%</td><td><div class="alloc-bar"><div class="alloc-fill" style="width:20%"></div></div></td><td>Large Cap</td></tr>
+            <tr><td>NVDA</td><td>NVIDIA</td><td class="up">15%</td><td><div class="alloc-bar"><div class="alloc-fill" style="width:15%"></div></div></td><td>Growth</td></tr>
+            <tr><td>BND</td><td>Vanguard Bond</td><td>20%</td><td><div class="alloc-bar"><div class="alloc-fill" style="width:20%" style="background:var(--yellow)"></div></div></td><td>Fixed Inc.</td></tr>
+            <tr><td>VEA</td><td>Intl Developed</td><td>12%</td><td><div class="alloc-bar"><div class="alloc-fill" style="width:12%"></div></div></td><td>Intl Equity</td></tr>
+            <tr><td>GLD</td><td>Gold ETF</td><td>8%</td><td><div class="alloc-bar"><div class="alloc-fill" style="width:8%;background:var(--yellow)"></div></div></td><td>Commodity</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <!-- Market Overview -->
+    <div class="rp-section">
+      <div class="rp-label">MARKET OVERVIEW</div>
+      <div class="mkt-grid" id="mktGrid"></div>
+    </div>
+
+    <!-- Fear & Greed -->
+    <div class="rp-section">
+      <div class="rp-label">FEAR &amp; GREED INDEX</div>
+      <div style="font-family:'DM Mono',monospace;font-size:20px;color:var(--yellow);font-weight:500" id="fgValue">62</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--yellow);margin-bottom:6px" id="fgLabel">GREED</div>
+      <div class="fg-meter"><div class="fg-needle" id="fgNeedle"></div></div>
+      <div class="fg-labels"><span>FEAR</span><span>NEUTRAL</span><span>GREED</span></div>
+    </div>
+
+    <!-- Sectors -->
+    <div class="rp-section">
+      <div class="rp-label">SECTOR PERFORMANCE</div>
+      <div id="sectorsDiv"></div>
+    </div>
+
+    <!-- Chat History -->
+    <div class="rp-section" style="flex:1">
+      <div class="rp-label">RECENT QUERIES</div>
+      <div id="historyDiv"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────
+let apiKey = localStorage.getItem('bloom_api_key') || 'BLOOM_API_KEY_PLACEHOLDER';
+let messages = [];
+let history = [];
+
+const SYSTEM = `You are Bloom, an elite investment analyst AI with deep expertise in:
+- Equity research and fundamental analysis
+- Macroeconomic trends and their market implications
+- Portfolio construction and risk management
+- Technical analysis and market timing
+- Sector rotation and thematic investing
+- Valuation methodologies (DCF, comparable companies, precedent transactions)
+
+Communication style: Sharp, data-informed, and direct — like a top-tier sell-side analyst.
+Provide actionable insights, cite relevant metrics, and always contextualize risk.
+Format with **bold** for key metrics/terms. Use clear section breaks for complex answers.
+Remind users this is analysis, not personalized financial advice when discussing specific securities.`;
+
+// ─── INIT ─────────────────────────────────────────────
+window.onload = () => {
+  if (true) {
+    document.getElementById('apiKeyInput').value = '••••••••••••••••';
+    
+  }
+  renderWatchlist();
+  renderMarket();
+  renderSectors();
+  renderFG();
+};
+
+function saveKey() {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if (!v || v.startsWith('•')) return;
+  apiKey = v;
+  localStorage.setItem('bloom_api_key', v);
+  document.getElementById('apiKeyInput').value = '••••••••••••••••';
+  
+  showError('API key saved. Ready to use Bloom!', true);
+}
+
+// ─── TABS ─────────────────────────────────────────────
+const panels = { chat: 'chat-area', research: 'research-panel-wrap', portfolio: 'portfolio-panel-wrap' };
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(panels[tab] || 'chat-area').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['chat','research','portfolio'][i] === tab);
+  });
+}
+
+// ─── WATCHLIST DATA ───────────────────────────────────
+const watchData = [
+  { ticker:'SPY',  name:'S&P 500 ETF',  price:'512.34', chg:'+1.24%', up:true },
+  { ticker:'QQQ',  name:'Nasdaq 100',   price:'438.71', chg:'+1.87%', up:true },
+  { ticker:'AAPL', name:'Apple Inc.',   price:'211.45', chg:'+0.63%', up:true },
+  { ticker:'NVDA', name:'NVIDIA',       price:'887.20', chg:'+3.41%', up:true },
+  { ticker:'MSFT', name:'Microsoft',    price:'418.90', chg:'-0.22%', up:false },
+  { ticker:'TSLA', name:'Tesla',        price:'172.80', chg:'-1.45%', up:false },
+  { ticker:'BTC',  name:'Bitcoin',      price:'67,420', chg:'+2.10%', up:true },
+  { ticker:'GLD',  name:'Gold ETF',     price:'224.80', chg:'+0.38%', up:true },
+];
+
+function renderWatchlist() {
+  const el = document.getElementById('watchlist');
+  el.innerHTML = watchData.map(w => `
+    <div class="watch-item" onclick="quickAsk('Give me a quick analyst take on ${w.ticker}.')">
+      <div><div class="watch-ticker">${w.ticker}</div><div class="watch-name">${w.name}</div></div>
+      <div class="watch-price">
+        <div class="watch-val">${w.price}</div>
+        <div class="watch-chg ${w.up?'up':'dn'}">${w.chg}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── MARKET OVERVIEW ──────────────────────────────────
+const mktData = [
+  { name:'S&P 500', val:'5,124', chg:'+1.2%', fill:72, up:true },
+  { name:'NASDAQ',  val:'16.2K', chg:'+1.9%', fill:78, up:true },
+  { name:'10Y YIELD',val:'4.38%',chg:'-3bp',  fill:55, up:false },
+  { name:'VIX',     val:'14.2',  chg:'-8.4%', fill:30, up:false },
+];
+function renderMarket() {
+  document.getElementById('mktGrid').innerHTML = mktData.map(m=>`
+    <div class="mkt-card">
+      <div class="mkt-name">${m.name}</div>
+      <div class="mkt-val">${m.val}</div>
+      <div class="mkt-chg ${m.up?'up':'dn'}">${m.chg}</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:${m.fill}%;background:${m.up?'var(--green)':'var(--red)'}"></div></div>
+    </div>`).join('');
+}
+
+// ─── FEAR GREED ───────────────────────────────────────
+function renderFG() {
+  const val = 62;
+  document.getElementById('fgValue').textContent = val;
+  document.getElementById('fgNeedle').style.left = val + '%';
+}
+
+// ─── SECTORS ─────────────────────────────────────────
+const sectors = [
+  { name:'Technology', pct:'+2.4', bar:82, up:true },
+  { name:'Energy',     pct:'+1.8', bar:68, up:true },
+  { name:'Financials', pct:'+0.9', bar:55, up:true },
+  { name:'Healthcare', pct:'-0.3', bar:45, up:false },
+  { name:'Utilities',  pct:'-1.1', bar:32, up:false },
+  { name:'Real Estate',pct:'-0.7', bar:38, up:false },
+];
+function renderSectors() {
+  document.getElementById('sectorsDiv').innerHTML = sectors.map(s=>`
+    <div class="sector-row">
+      <div class="sector-name">${s.name}</div>
+      <div class="sector-bar-wrap"><div class="sector-bar" style="width:${s.bar}%;background:${s.up?'var(--green)':'var(--red)'}"></div></div>
+      <div class="sector-pct ${s.up?'up':'dn'}">${s.pct}%</div>
+    </div>`).join('');
+}
+
+// ─── CHAT ─────────────────────────────────────────────
+const msgInput = document.getElementById('msgInput');
+msgInput.addEventListener('input', () => {
+  msgInput.style.height = 'auto';
+  msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
+  document.getElementById('sendBtn').disabled = !msgInput.value.trim() || !apiKey;
+});
+msgInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+function quickAsk(q) {
+  switchTab('chat');
+  msgInput.value = q;
+  msgInput.dispatchEvent(new Event('input'));
+  setTimeout(sendMessage, 80);
+}
+
+async function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text) return;
+
+  hideError();
+  document.getElementById('welcome').style.display = 'none';
+  msgInput.value = '';
+  msgInput.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  messages.push({ role: 'user', content: text });
+  addHistory(text);
+  renderMessages();
+  showTyping();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const reply = data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    messages.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    showError('⚠ ' + e.message);
+    messages.pop();
+  }
+
+  removeTyping();
+  renderMessages();
+  document.getElementById('sendBtn').disabled = !apiKey;
+  setTimeout(() => document.getElementById('messages').scrollTo({top:99999,behavior:'smooth'}), 50);
+}
+
+function renderMessages() {
+  const el = document.getElementById('messages');
+  const prev = el.querySelector('#welcome');
+  el.innerHTML = '';
+  if (prev && messages.length === 0) { el.appendChild(prev); return; }
+
+  messages.forEach(m => {
+    const wrap = document.createElement('div');
+    wrap.className = `msg-wrap ${m.role}`;
+    wrap.innerHTML = `
+      <div class="avatar ${m.role === 'assistant' ? 'bloom' : 'user'}">${m.role === 'assistant' ? '🌱' : 'U'}</div>
+      <div class="bubble ${m.role === 'assistant' ? 'bloom' : 'user'}">${formatMsg(m.content)}</div>`;
+    el.appendChild(wrap);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+function formatMsg(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^#{1,3} (.+)$/gm, '<div class="section-head">$1</div>')
+    .replace(/\n/g, '<br>');
+}
+
+let typingEl = null;
+function showTyping() {
+  const el = document.getElementById('messages');
+  typingEl = document.createElement('div');
+  typingEl.className = 'msg-wrap';
+  typingEl.id = 'typing';
+  typingEl.innerHTML = `<div class="avatar bloom">🌱</div><div class="bubble bloom"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  el.appendChild(typingEl);
+  el.scrollTop = el.scrollHeight;
+}
+function removeTyping() { document.getElementById('typing')?.remove(); }
+
+function clearChat() {
+  messages = [];
+  document.getElementById('messages').innerHTML = '<div id="welcome" style="text-align:center;padding:50px 20px;display:flex;flex-direction:column;align-items:center;gap:10px"><div style="font-size:40px;margin-bottom:6px">📈</div><div style="font-family:Playfair Display,serif;font-size:24px;color:var(--accent);font-weight:900">Good morning, Investor.</div><div style="color:var(--muted);font-size:12px;max-width:380px;line-height:1.8">Ask me anything — earnings analysis, sector rotation, valuation models, macro outlook, or portfolio strategy.</div></div>';
+}
+
+// ─── ERRORS ──────────────────────────────────────────
+function showError(msg, green=false) {
+  const el = document.getElementById('errorBanner');
+  el.style.display = 'block';
+  el.style.color = green ? 'var(--green)' : 'var(--red)';
+  el.style.borderColor = green ? 'rgba(78,203,113,0.3)' : 'rgba(224,85,85,0.3)';
+  el.style.background = green ? 'rgba(78,203,113,0.07)' : 'rgba(224,85,85,0.1)';
+  el.textContent = msg;
+  if (green) setTimeout(hideError, 3000);
+}
+function hideError() { document.getElementById('errorBanner').style.display = 'none'; }
+
+// ─── HISTORY ─────────────────────────────────────────
+function addHistory(q) {
+  history.unshift({ q, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+  if (history.length > 8) history.pop();
+  renderHistory();
+}
+function renderHistory() {
+  document.getElementById('historyDiv').innerHTML = history.map(h=>`
+    <div class="hist-item" onclick="quickAsk(${JSON.stringify(h.q)})">
+      <div class="hist-q">${h.q.length > 55 ? h.q.slice(0,55)+'…' : h.q}</div>
+      <div class="hist-time">${h.time}</div>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:11px;padding:8px 0">No queries yet</div>';
+}
+
+// ─── RESEARCH TAB ────────────────────────────────────
+async function runResearch() {
+  const prompt = document.getElementById('researchPrompt').value.trim();
+  if (!prompt) { showError('Paste your API key first, then enter a research topic.'); return; }
+
+  const btn = document.getElementById('runResearch');
+  btn.disabled = true; btn.textContent = 'ANALYZING…';
+  document.getElementById('researchResultCard').style.display = 'block';
+  document.getElementById('researchOutput').innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    document.getElementById('researchOutput').innerHTML = formatMsg(text);
+  } catch(e) {
+    document.getElementById('researchOutput').textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'RUN ANALYSIS →';
+}
+
+// ─── PORTFOLIO TAB ────────────────────────────────────
+async function runPortfolioAnalysis() {
+  const input = document.getElementById('portfolioInput').value.trim();
+  if (!input) { showError('Paste your API key first, then enter your holdings.'); return; }
+
+  const btn = document.getElementById('runPortfolio');
+  btn.disabled = true; btn.textContent = 'ANALYZING…';
+  document.getElementById('portfolioResultCard').style.display = 'block';
+  document.getElementById('portfolioOutput').innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+  const prompt = `Analyze this investment portfolio: ${input}
+
+Please provide:
+1. **Allocation Breakdown** – assess the weights and what they say about the investor's style
+2. **Concentration Risk** – where is the portfolio overexposed?
+3. **Diversification Score** – how well diversified is this portfolio across sectors, geographies, asset classes?
+4. **Correlation Risk** – which holdings likely move together?
+5. **Suggested Improvements** – 3 actionable changes to optimize risk/return
+6. **Overall Assessment** – a brief verdict
+
+Keep it crisp and actionable.`;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    document.getElementById('portfolioOutput').innerHTML = formatMsg(text);
+  } catch(e) {
+    document.getElementById('portfolioOutput').textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'ANALYZE PORTFOLIO →';
+}
+</script>
+</body>
+</html>
