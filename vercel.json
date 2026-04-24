@@ -1,12 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/chat.js", "use": "@vercel/node" },
-    { "src": "bloom-proxy-index.html", "use": "@vercel/static" }
-  ],
   "routes": [
     { "src": "/api/chat", "dest": "/api/chat.js" },
-    { "src": "/", "dest": "/bloom-proxy-index.html" },
     { "src": "/(.*)", "dest": "/bloom-proxy-index.html" }
   ]
 }
